@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyBuddy | AI-Powered PDF Study Assistant</title>
+    <meta name="description"
+        content="Upload your lecture notes and study materials. Chat with AI, take quizzes, generate flashcards, and have voice conversations to master your subjects.">
+    <meta name="theme-color" content="#0A0B14">
+
+    <!-- Favicon -->
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Highlight.js -->
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css">
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Ambient Background -->
+    <canvas id="ambient-canvas" class="ambient-canvas"></canvas>
+
+    <div class="app-shell">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="brand" id="brand-logo">
+                    <div class="brand-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+                            <path d="M8 7h6"></path>
+                            <path d="M8 11h8"></path>
+                        </svg>
+                    </div>
+                    <span>StudyBuddy</span>
+                </div>
+            </div>
+
+            <!-- PDF Upload -->
+            <div class="sidebar-section">
+                <h3 class="section-label">YOUR NOTES</h3>
+                <div class="upload-area" id="upload-area">
+                    <input type="file" id="file-input" accept="application/pdf" hidden />
+                    <div class="upload-dropzone" id="upload-dropzone">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <span>Drop PDF or <button class="link-btn" id="browse-btn">browse</button></span>
+                        <small>Max 25MB</small>
+                    </div>
+                    <div class="upload-progress hidden" id="upload-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <span class="progress-text" id="progress-text">Analyzing...</span>
+                    </div>
+                </div>
+
+                <!-- Active Document -->
+                <div class="active-doc hidden" id="active-doc">
+                    <div class="doc-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z">
+                            </path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                    </div>
+                    <div class="doc-details">
+                        <span class="doc-name" id="doc-name">document.pdf</span>
+                        <span class="doc-meta" id="doc-meta">12 pages · 45 chunks</span>
+                    </div>
+                    <button class="doc-remove" id="doc-remove" title="Remove document" aria-label="Remove document">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Study Tools -->
+            <div class="sidebar-section">
+                <h3 class="section-label">STUDY TOOLS</h3>
+                <div class="tool-buttons">
+                    <button class="tool-btn" id="tool-summary" title="Generate Summary" disabled>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="17" y1="10" x2="3" y2="10"></line>
+                            <line x1="21" y1="6" x2="3" y2="6"></line>
+                            <line x1="21" y1="14" x2="3" y2="14"></line>
+                            <line x1="17" y1="18" x2="3" y2="18"></line>
+                        </svg>
+                        <span>Summary</span>
+                    </button>
+                    <button class="tool-btn" id="tool-quiz" title="Take Quiz" disabled>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        <span>Quiz</span>
+                    </button>
+                    <button class="tool-btn" id="tool-flashcards" title="Flashcards" disabled>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                            <path d="M10 4v4"></path>
+                            <path d="M2 8h20"></path>
+                            <path d="M6 4v4"></path>
+                        </svg>
+                        <span>Flashcards</span>
+                    </button>
+                    <button class="tool-btn voice-tool" id="tool-voice" title="Voice Chat">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                        <span>Voice Chat</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="sidebar-section sidebar-bottom">
+                <button class="new-chat-btn" id="new-chat-btn" title="Start new conversation">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    New Chat
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Welcome Screen -->
+            <section class="welcome-view" id="welcome-view">
+                <div class="welcome-hero">
+                    <div class="hero-badge">📚 AI Study Assistant</div>
+                    <h1>Master your notes<br><span class="gradient-text">with AI.</span></h1>
+                    <p class="hero-subtitle">Upload your lecture notes, textbook chapters, or study materials. Chat,
+                        quiz yourself, generate flashcards, or have a voice conversation to deeply understand any topic.
+                    </p>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="feature-card" id="feature-chat">
+                        <div class="feature-icon chat-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                        </div>
+                        <h3>Smart Chat</h3>
+                        <p>Ask questions about your notes with AI-powered RAG retrieval</p>
+                    </div>
+                    <div class="feature-card" id="feature-voice">
+                        <div class="feature-icon voice-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            </svg>
+                        </div>
+                        <h3>Voice Talk</h3>
+                        <p>Have a natural voice conversation about your study material</p>
+                    </div>
+                    <div class="feature-card" id="feature-quiz">
+                        <div class="feature-icon quiz-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            </svg>
+                        </div>
+                        <h3>Auto Quiz</h3>
+                        <p>Generate quizzes from your notes to test your understanding</p>
+                    </div>
+                    <div class="feature-card" id="feature-flashcard">
+                        <div class="feature-icon flashcard-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                <path d="M2 8h20"></path>
+                            </svg>
+                        </div>
+                        <h3>Flashcards</h3>
+                        <p>Create study flashcards automatically from any PDF</p>
+                    </div>
+                </div>
+
+                <div class="welcome-cta">
+                    <p>👆 Upload your PDF in the sidebar to get started</p>
+                </div>
+            </section>
+
+            <!-- Chat View -->
+            <section class="chat-view hidden" id="chat-view">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message assistant welcome-msg">
+                        <div class="msg-avatar assistant-avatar">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+                            </svg>
+                        </div>
+                        <div class="msg-body">
+                            <div class="msg-content">
+                                <p>Hey there! 👋 I'm <strong>StudyBuddy</strong>, your AI study assistant. Upload your
+                                    notes and I'll help you understand them deeply. You can:</p>
+                                <ul>
+                                    <li>💬 Ask me questions about your notes</li>
+                                    <li>🎯 Request cross-questions to test yourself</li>
+                                    <li>📝 Generate quizzes & flashcards</li>
+                                    <li>🎤 Have a voice conversation</li>
+                                </ul>
+                            </div>
+                            <span class="msg-time" data-timestamp="now"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input-area">
+                    <form id="chat-form">
+                        <div class="input-container">
+                            <button type="button" class="input-action-btn" id="attach-btn" title="Upload PDF"
+                                aria-label="Upload PDF">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path
+                                        d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48">
+                                    </path>
+                                </svg>
+                            </button>
+                            <textarea id="chat-input" placeholder="Ask about your notes... (Shift+Enter for newline)"
+                                rows="1"></textarea>
+                            <button type="button" class="input-action-btn voice-btn" id="voice-btn"
+                                title="Start voice chat" aria-label="Voice chat">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                                </svg>
+                            </button>
+                            <button type="submit" class="send-btn" id="send-btn" aria-label="Send" disabled>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
+                    <div class="input-footer">Powered by RAG + GPT-4o · Responses are AI-generated</div>
+                </div>
+            </section>
+
+            <!-- Quiz View -->
+            <section class="quiz-view hidden" id="quiz-view">
+                <div class="quiz-header">
+                    <button class="back-btn" id="quiz-back-btn" aria-label="Back to chat">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        Back
+                    </button>
+                    <h2>📝 Quiz Mode</h2>
+                    <div class="quiz-score" id="quiz-score"></div>
+                </div>
+                <div class="quiz-container" id="quiz-container">
+                    <div class="quiz-loading" id="quiz-loading">
+                        <div class="loader"></div>
+                        <p>Generating questions from your notes...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Flashcard View -->
+            <section class="flashcard-view hidden" id="flashcard-view">
+                <div class="flashcard-header">
+                    <button class="back-btn" id="flashcard-back-btn" aria-label="Back to chat">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        Back
+                    </button>
+                    <h2>🗂️ Flashcards</h2>
+                    <div class="flashcard-counter" id="flashcard-counter">1 / 8</div>
+                </div>
+                <div class="flashcard-container" id="flashcard-container">
+                    <div class="flashcard-loading" id="flashcard-loading">
+                        <div class="loader"></div>
+                        <p>Creating flashcards from your notes...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Voice Call Overlay -->
+            <div id="call-overlay" class="call-overlay hidden">
+                <div class="call-ui">
+                    <div class="call-visualizer">
+                        <div class="call-orb">
+                            <div class="orb-ring ring-1"></div>
+                            <div class="orb-ring ring-2"></div>
+                            <div class="orb-ring ring-3"></div>
+                            <div class="orb-core">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <h2 id="call-status">Listening...</h2>
+                    <p id="call-subtitle">Speak your question clearly</p>
+                    <div id="live-transcript" class="live-transcript"></div>
+                    <div class="call-wave-bars">
+                        <span></span><span></span><span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                    <button id="end-call-btn" class="end-call-btn" aria-label="End voice chat">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path
+                                d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91">
+                            </path>
+                            <line x1="23" y1="1" x2="1" y2="23"></line>
+                        </svg>
+                        <span>End Chat</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Sidebar Toggle (Mobile) -->
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+    </button>
+
+    <!-- Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+    <script src="/static/script.js"></script>
+</body>
+
+</html>
